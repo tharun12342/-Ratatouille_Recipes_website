@@ -1,0 +1,608 @@
+{% extends 'base.html' %}
+{% block title %}{{ recipe.name }} — RecipeMatch{% endblock %}
+
+{% block extra_head %}
+<style>
+  .detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 32px;
+  }
+
+
+  .detail-sidebar {
+    position: sticky;
+    top: 80px;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .recipe-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .recipe-hero-img {
+    height: 340px;
+    background: linear-gradient(135deg, #1e2020, #252828);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .recipe-hero-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+  }
+
+  .recipe-hero-body {
+    padding: 28px 32px;
+  }
+
+  .recipe-cuisine {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .recipe-name {
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+
+  .recipe-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .rtag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 100px;
+  }
+
+  .rtag-veg {
+    background: rgba(92, 201, 139, 0.15);
+    color: var(--green);
+  }
+
+  .rtag-vegan {
+    background: rgba(92, 201, 139, 0.1);
+    color: var(--green);
+  }
+
+  .rtag-gf {
+    background: rgba(91, 158, 232, 0.15);
+    color: var(--blue);
+  }
+
+  .rtag-spice {
+    background: rgba(232, 92, 92, 0.15);
+    color: var(--red);
+  }
+
+  .rtag-diff {
+    background: var(--card);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .recipe-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .rstat {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .rstat-val {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--accent);
+  }
+
+  .rstat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* Sections */
+  .detail-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+  }
+
+  .detail-section-title {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Ingredients list */
+  .ing-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .ing-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 0.85rem;
+    transition: border-color 0.15s;
+  }
+
+  .ing-row.have {
+    border-color: var(--green);
+  }
+
+  .ing-row.missing {
+    border-color: var(--border);
+    opacity: 0.75;
+  }
+
+  .ing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ing-dot.have {
+    background: var(--green);
+  }
+
+  .ing-dot.missing {
+    background: var(--border);
+  }
+
+  .ing-name {
+    font-weight: 500;
+  }
+
+  .ing-qty {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* Steps */
+  .steps-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 14px;
+  }
+
+  .step-num {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-text {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text);
+    flex: 1;
+  }
+
+  /* Nutrition */
+  .nut-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+
+  .nut-box {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 8px;
+    text-align: center;
+  }
+
+  .nut-val {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--accent);
+  }
+
+  .nut-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* Save btn */
+  .save-btn {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.18s;
+  }
+
+  .save-btn:hover,
+  .save-btn.saved {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .save-btn.saved {
+    background: rgba(232, 92, 92, 0.1);
+  }
+
+  /* Detailed instructions toggle */
+  .detail-toggle {
+    background: none;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-family: var(--font-body);
+    font-size: 0.83rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .detail-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .detailed-block {
+    display: none;
+    margin-top: 16px;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 18px;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    color: var(--muted);
+    white-space: pre-wrap;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .detailed-block.open {
+    display: block;
+  }
+
+  /* Similar */
+  .similar-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .similar-card {
+    display: flex;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    transition: all 0.18s;
+    cursor: pointer;
+  }
+
+  .similar-card:hover {
+    border-color: var(--accent);
+  }
+
+  .similar-thumb {
+    width: 54px;
+    height: 54px;
+    background: var(--surface);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .similar-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .similar-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .similar-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .similar-meta {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  @media(max-width:1000px) {
+    .detail-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-sidebar {
+      position: static;
+    }
+  }
+
+  @media(max-width:600px) {
+    .recipe-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .ing-2col {
+      grid-template-columns: 1fr;
+    }
+
+    .nut-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .recipe-name {
+      font-size: 1.6rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div style="margin-bottom:16px;">
+    <a href="javascript:history.back()" style="color:var(--muted);font-size:0.85rem;">← Back</a>
+  </div>
+
+  <div class="detail-layout">
+    <!-- MAIN -->
+    <div class="detail-main">
+      <div class="recipe-hero">
+        <div class="recipe-hero-img">
+          
+    <div class="emoji-3d-wrap" style="--hue:{{ recipe.visual_dna.hue }}deg; --sat:{{ recipe.visual_dna.sat }}%; --dur:{{ recipe.visual_dna.duration }}s; --del:{{ recipe.visual_dna.delay }}s">
+      <div data-emoji="{{ recipe.image_url }}" style="font-size:8rem;"></div>
+    </div>
+    
+        </div>
+        <div class="recipe-hero-body">
+          <div class="recipe-cuisine">{{ recipe.cuisine_type }} · {{ recipe.region }}</div>
+          <h1 class="recipe-name">{{ recipe.name }}</h1>
+          <div class="recipe-tags">
+            {% if recipe.is_vegetarian %}<span class="rtag rtag-veg">🌱 Vegetarian</span>{% endif %}
+            {% if recipe.is_vegan %}<span class="rtag rtag-vegan">🌿 Vegan</span>{% endif %}
+            {% if recipe.is_gluten_free %}<span class="rtag rtag-gf">🌾 Gluten-Free</span>{% endif %}
+            {% if recipe.spice_level %}<span class="rtag rtag-spice">🌶 {{ recipe.spice_level }}</span>{% endif %}
+            {% if recipe.difficulty %}<span class="rtag rtag-diff">{{ recipe.difficulty }}</span>{% endif %}
+            {% if recipe.category %}<span class="rtag rtag-diff">{{ recipe.category }}</span>{% endif %}
+          </div>
+          <div class="recipe-stats">
+            <div class="rstat">
+              <div class="rstat-val">{{ recipe.prep_time }}</div>
+              <div class="rstat-label">Prep (min)</div>
+            </div>
+            <div class="rstat">
+              <div class="rstat-val">{{ recipe.cook_time }}</div>
+              <div class="rstat-label">Cook (min)</div>
+            </div>
+            <div class="rstat">
+              <div class="rstat-val">{{ recipe.servings }}</div>
+              <div class="rstat-label">Servings</div>
+            </div>
+            <div class="rstat">
+              <div class="rstat-val">{{ recipe.calories|floatformat:0 }}</div>
+              <div class="rstat-label">Cal/Serving</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INGREDIENTS -->
+      <div class="detail-section">
+        <div class="detail-section-title">🛒 Ingredients
+          <span style="font-size:0.75rem;font-weight:400;color:var(--muted);">
+            ({{ ingredient_list|length }} total —
+            <span style="color:var(--green)">{{ ingredient_list|length }} items</span>)
+          </span>
+        </div>
+        <div class="ing-2col">
+          {% for ing in ingredient_list %}
+          <div class="ing-row {{ ing.in_pantry|yesno:'have,missing' }}">
+            <div class="ing-dot {{ ing.in_pantry|yesno:'have,missing' }}"></div>
+            <span class="ing-name">{{ ing.name }}</span>
+            {% if ing.qty %}<span class="ing-qty">{{ ing.qty }}</span>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        <div style="display:flex;gap:12px;margin-top:14px;font-size:0.78rem;">
+          <span style="color:var(--green);">🟢 In your pantry</span>
+          <span style="color:var(--muted);">⚪ Need to buy</span>
+        </div>
+      </div>
+
+      <!-- INSTRUCTIONS -->
+      <div class="detail-section">
+        <div class="detail-section-title">👨‍🍳 Instructions</div>
+        <ol class="steps-list">
+          {% for step in instructions_list %}
+          <li class="step-item">
+            <div class="step-num">{{ forloop.counter }}</div>
+            <div class="step-text">{{ step }}</div>
+          </li>
+          {% endfor %}
+        </ol>
+        {% if recipe.detailed_instructions %}
+        <div style="margin-top:18px;">
+          <button class="detail-toggle" onclick="toggleDetailed(this)">📖 Show Detailed Chef's Guide</button>
+          <div class="detailed-block" id="detailed-block">{{ recipe.detailed_instructions }}</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- NUTRITION -->
+      <div class="detail-section">
+        <div class="detail-section-title">🥗 Nutrition Per Serving</div>
+        <div class="nut-grid">
+          <div class="nut-box">
+            <div class="nut-val">{{ recipe.calories|floatformat:0 }}</div>
+            <div class="nut-label">Calories</div>
+          </div>
+          <div class="nut-box">
+            <div class="nut-val">{{ recipe.protein|floatformat:1 }}g</div>
+            <div class="nut-label">Protein</div>
+          </div>
+          <div class="nut-box">
+            <div class="nut-val">{{ recipe.carbohydrates|floatformat:1 }}g</div>
+            <div class="nut-label">Carbs</div>
+          </div>
+          <div class="nut-box">
+            <div class="nut-val">{{ recipe.fat|floatformat:1 }}g</div>
+            <div class="nut-label">Fat</div>
+          </div>
+          <div class="nut-box">
+            <div class="nut-val">{{ recipe.fiber|floatformat:1 }}g</div>
+            <div class="nut-label">Fiber</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="detail-sidebar">
+      <!-- Save -->
+      {% if user.is_authenticated %}
+      <button class="save-btn" id="save-btn" data-saved="{% if is_saved %}1{% else %}0{% endif %}"
+        data-pk="{{ recipe.pk }}" onclick="toggleSave(this.dataset.pk)">
+        {% if is_saved %}❤️ Saved{% else %}🤍 Save Recipe{% endif %}
+      </button>
+      {% endif %}
+
+      <!-- Similar -->
+      <div class="detail-section" style="margin-bottom:0;">
+        <div class="detail-section-title">🔀 Similar Recipes</div>
+        <div class="similar-grid">
+          {% for s in similar %}
+          <a href="/recipes/{{ s.pk }}/" class="similar-card" style="text-decoration:none;color:inherit;">
+            <div class="similar-thumb">
+              
+        <div class="emoji-3d-wrap" style="--hue:{{ s.visual_dna.hue }}deg; --sat:{{ s.visual_dna.sat }}%; --dur:{{ s.visual_dna.duration }}s; --del:{{ s.visual_dna.delay }}s">
+          <div data-emoji="{{ s.image_url }}" style="font-size:2rem;"></div>
+        </div>
+        
+            </div>
+            <div class="similar-info">
+              <div class="similar-name">{{ s.name }}</div>
+              <div class="similar-meta">{{ s.cuisine_type }} · {{ s.difficulty }}</div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function toggleDetailed(btn) {
+    const block = document.getElementById('detailed-block');
+    block.classList.toggle('open');
+    btn.textContent = block.classList.contains('open') ? '📕 Hide Chef\'s Guide' : '📖 Show Detailed Chef\'s Guide';
+  }
+
+  // Init saved state from server-rendered data attribute
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('save-btn');
+    if (btn && btn.dataset.saved === '1') btn.classList.add('saved');
+  });
+
+  async function toggleSave(pk) {
+    const r = await fetch(`/api/recipes/${pk}/save/`, {
+      method: 'POST', headers: { 'X-CSRFToken': getCsrf() }
+    });
+    const d = await r.json();
+    const btn = document.getElementById('save-btn');
+    btn.classList.toggle('saved', d.saved);
+    btn.dataset.saved = d.saved ? '1' : '0';
+    btn.textContent = d.saved ? '❤️ Saved' : '🤍 Save Recipe';
+    showToast(d.saved ? '❤️ Recipe saved!' : 'Removed from saved', d.saved ? 'success' : '');
+  }
+</script>
+{% endblock %}

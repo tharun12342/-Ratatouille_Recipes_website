@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Ratatouille — Fine Dining Recipes{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,900;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+
+  {% block extra_head %}{% endblock %}
+
+</head>
+
+<body>
+
+  <!-- FLOATING COOKING PARTICLES -->
+  <div class="cooking-particles" aria-hidden="true">
+    <span class="cp" style="--x:5%;  --y:12%; --dur:18s; --del:0s;   --sz:1.6rem; --op:0.13;">🍅</span>
+    <span class="cp" style="--x:18%; --y:72%; --dur:22s; --del:3s;   --sz:1.4rem; --op:0.11;">🧄</span>
+    <span class="cp" style="--x:32%; --y:30%; --dur:20s; --del:6s;   --sz:1.8rem; --op:0.10;">🌶️</span>
+    <span class="cp" style="--x:48%; --y:85%; --dur:25s; --del:1s;   --sz:1.3rem; --op:0.12;">🧅</span>
+    <span class="cp" style="--x:62%; --y:18%; --dur:19s; --del:8s;   --sz:1.5rem; --op:0.11;">🍋</span>
+    <span class="cp" style="--x:75%; --y:60%; --dur:23s; --del:4s;   --sz:1.7rem; --op:0.10;">🌿</span>
+    <span class="cp" style="--x:88%; --y:35%; --dur:21s; --del:2s;   --sz:1.4rem; --op:0.12;">🫚</span>
+    <span class="cp" style="--x:92%; --y:78%; --dur:17s; --del:7s;   --sz:1.6rem; --op:0.09;">🥄</span>
+    <span class="cp" style="--x:10%; --y:50%; --dur:24s; --del:5s;   --sz:1.3rem; --op:0.10;">🫙</span>
+    <span class="cp" style="--x:55%; --y:45%; --dur:20s; --del:9s;   --sz:1.5rem; --op:0.09;">🫛</span>
+    <span class="cp" style="--x:38%; --y:90%; --dur:26s; --del:11s;  --sz:1.4rem; --op:0.11;">🍯</span>
+    <span class="cp" style="--x:80%; --y:8%;  --dur:22s; --del:13s;  --sz:1.6rem; --op:0.10;">🧂</span>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="/" class="nav-logo">✦ <span>Ratatouille</span></a>
+    <div class="nav-links">
+      <a href="/" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a>
+      <a href="/match/" class="nav-link {% if request.resolver_match.url_name == 'match' %}active{% endif %}">Match
+        Recipes</a>
+      <a href="/recipes/"
+        class="nav-link {% if request.resolver_match.url_name == 'recipe_list' %}active{% endif %}">Browse All</a>
+      {% if user.is_authenticated %}
+      <a href="/saved/"
+        class="nav-link {% if request.resolver_match.url_name == 'saved_recipes' %}active{% endif %}">Saved</a>
+      {% endif %}
+    </div>
+    <div class="nav-right">
+      <button class="pantry-badge" onclick="openDrawer()">
+        ✦ My Pantry <span class="pantry-count" id="pantry-count">0</span>
+      </button>
+      {% if user.is_authenticated %}
+      <a href="/auth/logout/" class="btn btn-outline btn-sm">Logout</a>
+      {% else %}
+      <a href="/auth/login/" class="btn btn-outline btn-sm">Login</a>
+      <a href="/register/" class="btn btn-primary btn-sm">Sign Up</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- PANTRY DRAWER -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="pantry-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">✦ My Pantry</div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="pantry-items-container">
+      <div class="empty-pantry">
+        <div class="big-icon">🧺</div>
+        <p>Your pantry is empty.<br>Add ingredients from the home page.</p>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <a href="/match/" class="btn btn-primary" id="find-recipes-btn" style="display:none;justify-content:center;">
+        ✦ Find Matching Recipes
+      </a>
+      <button class="btn btn-outline" onclick="clearPantry()">Clear Pantry</button>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  {% block content %}{% endblock %}
+
+  <script src="{% static 'js/main.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+
+</html>

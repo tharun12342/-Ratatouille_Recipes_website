@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}Browse Recipes — Ratatouille{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div class="page-header-eyebrow">❖ Fine Dining Collection</div>
+    <h1 class="page-title">All Recipes</h1>
+    <div class="gold-line" style="margin:12px 0 0;"></div>
+    <p class="page-sub">{{ total|default:0 }} curated recipes from 20+ culinary traditions</p>
+  </div>
+
+  <form method="GET">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" name="q" type="text" value="{{ current_filters.q }}"
+          placeholder="Search by name, ingredient, cuisine…">
+      </div>
+      <select class="filter-select" name="category">
+        <option value="">All Categories</option>
+        {% for c in categories %}
+        <option value="{{ c }}" {% if current_filters.category == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+      <select class="filter-select" name="cuisine">
+        <option value="">All Cuisines</option>
+        {% for c in cuisines %}
+        <option value="{{ c }}" {% if current_filters.cuisine == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+      <select class="filter-select" name="difficulty">
+        <option value="">Any Difficulty</option>
+        {% for d in difficulties %}
+        <option value="{{ d }}" {% if current_filters.difficulty == d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+      <select class="filter-select" name="diet">
+        <option value="">All Diets</option>
+        <option value="vegetarian" {% if current_filters.diet == 'vegetarian' %}selected{% endif %}>Vegetarian</option>
+        <option value="vegan" {% if current_filters.diet == 'vegan' %}selected{% endif %}>Vegan</option>
+        <option value="gluten_free" {% if current_filters.diet == 'gluten_free' %}selected{% endif %}>Gluten-Free</option>
+      </select>
+      <select class="filter-select" name="sort">
+        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Sort: A-Z</option>
+        <option value="time" {% if current_filters.sort == 'time' %}selected{% endif %}>Sort: Quickest</option>
+        <option value="calories" {% if current_filters.sort == 'calories' %}selected{% endif %}>Sort: Low Cal</option>
+      </select>
+      <button type="submit" class="btn btn-primary">Filter</button>
+    </div>
+  </form>
+
+  {% if page.object_list %}
+  <div class="recipe-grid">
+    {% for recipe in page.object_list %}
+    <a href="/recipes/{{ recipe.pk }}/" class="recipe-card" style="text-decoration:none;">
+      <div class="card-img"
+        style="display:flex;align-items:center;justify-content:center;font-size:3.5rem;background:linear-gradient(135deg,#1e2020,#252828);">
+
+        <div class="emoji-3d-wrap dynamic-visual" data-hue="{{ recipe.visual_dna.hue }}"
+          data-sat="{{ recipe.visual_dna.sat }}" data-dur="{{ recipe.visual_dna.duration }}"
+          data-del="{{ recipe.visual_dna.delay }}">
+          <div data-emoji="{{ recipe.image_url }}" style="font-size:4rem;"></div>
+        </div>
+
+        <div class="card-badges">
+          {% if recipe.is_vegetarian %}<span class="badge badge-veg">Veg</span>{% endif %}
+          {% if recipe.difficulty == 'Hard' %}<span class="badge badge-hard">Hard</span>{% endif %}
+        </div>
+        {% if recipe.total_time %}<div
+          style="position:absolute;bottom:10px;right:10px;z-index:2;background:rgba(0,0,0,0.75);border-radius:4px;padding:3px 9px;font-size:0.68rem;font-weight:500;letter-spacing:0.05em;color:var(--gold-pale);">
+          ⏱ {{ recipe.total_time }}m</div>{% endif %}
+      </div>
+      <div class="card-body">
+        <div class="card-title">{{ recipe.name }}</div>
+        <div class="card-meta">
+          <span>🌍 {{ recipe.cuisine_type }}</span>
+          <span>🍳 {{ recipe.difficulty }}</span>
+          {% if recipe.calories %}<span>🔥 {{ recipe.calories|floatformat:0 }} cal</span>{% endif %}
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted2);letter-spacing:0.05em;">{{ recipe.category }}{% if recipe.meal_time %} · {{ recipe.meal_time }}{% endif %}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if page.has_other_pages %}
+  <div class="pagination">
+    {% if page.has_previous %}<a
+      href="?{% for k,v in current_filters.items %}{{ k }}={{ v|urlencode }}&{% endfor %}page={{ page.previous_page_number }}"
+      class="page-link">← Prev</a>{% endif %}
+    {% for i in page.paginator.page_range %}
+    {% if i == page.number %}<span class="page-link current">{{ i }}</span>
+    {% elif i <= 3 or i >= page.paginator.num_pages|add:"-2" or i == page.number|add:"-1" or i == page.number|add:"1" %}
+      <a href="?{% for k,v in current_filters.items %}{{ k }}={{ v|urlencode }}&{% endfor %}page={{ i }}"
+        class="page-link">{{ i }}</a>
+      {% elif i == 4 or i == page.paginator.num_pages|add:"-3" %}<span class="page-link" style="cursor:default">…</span>
+      {% endif %}
+      {% endfor %}
+      {% if page.has_next %}<a
+        href="?{% for k,v in current_filters.items %}{{ k }}={{ v|urlencode }}&{% endfor %}page={{ page.next_page_number }}"
+        class="page-link">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align:center;padding:80px;color:var(--muted);">
+    <div style="font-size:3rem;margin-bottom:16px;opacity:0.4;">🍽️</div>
+    <h3 style="font-family:var(--font-heading);font-size:1.5rem;margin-bottom:8px;color:var(--cream);">No recipes found
+    </h3>
+    <p style="font-size:0.88rem;">Try adjusting your search or filters.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.dynamic-visual').forEach(el => {
+      if (el.dataset.hue) el.style.setProperty('--hue', el.dataset.hue + 'deg');
+      if (el.dataset.sat) el.style.setProperty('--sat', el.dataset.sat + '%');
+      if (el.dataset.dur) el.style.setProperty('--dur', el.dataset.dur + 's');
+      if (el.dataset.del) el.style.setProperty('--del', el.dataset.del + 's');
+    });
+  });
+</script>
+{% endblock %}

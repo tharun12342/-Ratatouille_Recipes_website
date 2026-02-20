@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Login — RecipeMatch{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 64px);padding:32px;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:380px;">
+    <h1 style="font-family:'Fraunces',serif;font-size:1.8rem;font-weight:900;margin-bottom:6px;">Welcome back 👋</h1>
+    <p style="color:var(--muted);font-size:0.88rem;margin-bottom:28px;">Login to save recipes and sync your pantry</p>
+    <form method="POST">{% csrf_token %}
+      {% if form.errors %}<div style="background:rgba(232,92,92,0.1);border:1px solid var(--red);border-radius:10px;padding:10px 14px;font-size:0.83rem;color:var(--red);margin-bottom:16px;">Invalid username or password.</div>{% endif %}
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Username</label>
+        <input name="username" type="text" style="width:100%;background:var(--card);border:1.5px solid var(--border);color:var(--text);border-radius:10px;padding:11px 14px;font-size:0.95rem;font-family:'DM Sans',sans-serif;outline:none;" required>
+      </div>
+      <div style="margin-bottom:22px;">
+        <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Password</label>
+        <input name="password" type="password" style="width:100%;background:var(--card);border:1.5px solid var(--border);color:var(--text);border-radius:10px;padding:11px 14px;font-size:0.95rem;font-family:'DM Sans',sans-serif;outline:none;" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;">Login</button>
+    </form>
+    <p style="text-align:center;margin-top:18px;font-size:0.85rem;color:var(--muted);">Don't have an account? <a href="/register/" style="color:var(--accent);font-weight:600;">Sign up</a></p>
+  </div>
+</div>
+{% endblock %}

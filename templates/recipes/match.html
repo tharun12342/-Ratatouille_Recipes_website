@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+{% block title %}Matching Recipes — RecipeMatch{% endblock %}
+
+{% block extra_head %}
+<style>
+  .match-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 28px;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 80px;
+    height: fit-content;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-title {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .sidebar-section {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .sidebar select {
+    width: 100%;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.83rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    outline: none;
+  }
+
+  .sidebar select:focus {
+    border-color: var(--accent);
+  }
+
+  .min-match-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .min-match-wrap input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+  }
+
+  .min-match-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent);
+    width: 36px;
+    text-align: right;
+  }
+
+  .apply-btn {
+    width: 100%;
+    margin: 14px 20px;
+    width: calc(100% - 40px);
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 11px;
+    font-weight: 700;
+    font-family: var(--font-body);
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .apply-btn:hover {
+    background: #f0d060;
+  }
+
+  .pantry-mini {
+    padding: 14px 20px;
+  }
+
+  .pantry-mini-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 3px 9px;
+    font-size: 0.72rem;
+    margin: 2px;
+  }
+
+  .pantry-mini-tag button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+
+  .pantry-mini-tag button:hover {
+    color: var(--red);
+  }
+
+  .add-more {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    display: block;
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .result-count {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .result-sub {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .no-pantry-msg {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 60px 40px;
+    text-align: center;
+  }
+
+  .no-pantry-msg h2 {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    margin: 16px 0 8px;
+  }
+
+  .no-pantry-msg p {
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .match-pct {
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .match-pct.high {
+    color: var(--green);
+  }
+
+  .match-pct.mid {
+    color: var(--accent);
+  }
+
+  .match-pct.low {
+    color: var(--muted);
+  }
+
+  @media(max-width:900px) {
+    .match-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+      position: static;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">🎯 Recipe Matches</h1>
+    <p class="page-sub">Recipes ranked by how well your pantry covers the ingredients</p>
+  </div>
+
+  {% if pantry_count == 0 %}
+  <div class="no-pantry-msg">
+    <div style="font-size:4rem">🧺</div>
+    <h2>Your pantry is empty</h2>
+    <p>Add ingredients from the home page to find matching recipes.</p>
+    <a href="/" class="btn btn-primary">Go Add Ingredients</a>
+  </div>
+  {% else %}
+
+  <form method="GET" id="filter-form">
+    <div class="match-layout">
+
+      <!-- SIDEBAR FILTERS -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">🎛️ Filters</div>
+        </div>
+
+        <!-- Pantry Items -->
+        <div class="pantry-mini">
+          <div class="sidebar-label">Your Pantry ({{ pantry_count }})</div>
+          <div id="pantry-mini-tags">
+            {% for item in pantry_items %}
+            <span class="pantry-mini-tag">{{ item.name }}
+              <button type="button" class="rm-pantry-btn" data-id="{{ item.id }}"
+                data-name="{{ item.name|escapejs }}">×</button>
+            </span>
+            {% endfor %}
+          </div>
+          <a href="/" class="add-more">+ Add more ingredients</a>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-label">Minimum Match</div>
+          <div class="min-match-wrap">
+            <input type="range" name="min_match" min="10" max="100" step="10" value="{{ current_filters.min_match }}"
+              oninput="document.getElementById('match-val').textContent=this.value+'%'">
+            <span class="min-match-val" id="match-val">{{ current_filters.min_match }}%</span>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-label">Category</div>
+          <select name="category">
+            <option value="">All Categories</option>
+            {% for c in categories %}
+            <option value="{{ c }}" {% if current_filters.category == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-label">Cuisine</div>
+          <select name="cuisine">
+            <option value="">All Cuisines</option>
+            {% for c in cuisines %}
+            <option value="{{ c }}" {% if current_filters.cuisine == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-label">Difficulty</div>
+          <select name="difficulty">
+            <option value="">Any Difficulty</option>
+            {% for d in difficulties %}
+            <option value="{{ d }}" {% if current_filters.difficulty == d %}selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-label">Diet</div>
+          <select name="diet">
+            <option value="">No Restriction</option>
+            <option value="vegetarian" {% if current_filters.diet == 'vegetarian' %}selected{% endif %}>Vegetarian
+            </option>
+            <option value="vegan" {% if current_filters.diet == 'vegan' %}selected{% endif %}>Vegan</option>
+            <option value="gluten_free" {% if current_filters.diet == 'gluten_free' %}selected{% endif %}>Gluten-Free
+            </option>
+          </select>
+        </div>
+
+        <button type="submit" class="apply-btn">Apply Filters</button>
+      </div>
+
+      <!-- RESULTS -->
+      <div>
+        <div class="results-header">
+          <div>
+            <div class="result-count">{{ total_matches }} recipes found</div>
+            <div class="result-sub">Sorted by best ingredient match</div>
+          </div>
+        </div>
+
+        {% if page.object_list %}
+        <div class="recipe-grid">
+          {% for item in page.object_list %}
+          {% with r=item.recipe %}
+          <a href="/recipes/{{ r.pk }}/" class="recipe-card" style="text-decoration:none;">
+            <div class="card-img"
+              style="display:flex;align-items:center;justify-content:center;font-size:3.5rem;background:linear-gradient(135deg,#1e2020,#252828);">
+
+              <div class="emoji-3d-wrap"
+                style="--hue:{{ r.visual_dna.hue }}deg; --sat:{{ r.visual_dna.sat }}%; --dur:{{ r.visual_dna.duration }}s; --del:{{ r.visual_dna.delay }}s">
+                <div data-emoji="{{ r.image_url }}" style="font-size:4rem;"></div>
+              </div>
+
+              <div class="card-badges">
+                <span class="badge badge-match">{{ item.pct }}%</span>
+                {% if r.is_vegetarian %}<span class="badge badge-veg">Veg</span>{% endif %}
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="card-title">{{ r.name }}</div>
+              <div class="card-meta">
+                <span>🕐 {{ r.total_time }}min</span>
+                <span>🍳 {{ r.difficulty }}</span>
+                <span>🌍 {{ r.cuisine_type }}</span>
+              </div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;">
+                {{ item.matched }} of {{ item.total }} ingredients in your pantry
+                (missing <span style="color:var(--accent2)">{{ item.missing }}</span>)
+              </div>
+              <div class="match-bar">
+                <div
+                  class="match-bar-fill {% if item.pct >= 100 %}match-fill-100{% elif item.pct >= 75 %}match-fill-75{% elif item.pct >= 50 %}match-fill-50{% else %}match-fill-low{% endif %}"
+                  data-pct="{{ item.pct }}"></div>
+              </div>
+            </div>
+          </a>
+          {% endwith %}
+          {% endfor %}
+        </div>
+
+        <!-- PAGINATION -->
+        {% if page.has_other_pages %}
+        <div class="pagination">
+          {% if page.has_previous %}
+          <a href="?page={{ page.previous_page_number }}&{{ request.GET.urlencode }}" class="page-link">← Prev</a>
+          {% endif %}
+          <span class="page-link current">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+          {% if page.has_next %}
+          <a href="?page={{ page.next_page_number }}&{{ request.GET.urlencode }}" class="page-link">Next →</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div style="text-align:center;padding:60px;color:var(--muted);">
+          <div style="font-size:3rem;margin-bottom:16px;">🍽️</div>
+          <h3 style="font-family:'Fraunces',serif;margin-bottom:8px;">No recipes match your current pantry + filters
+          </h3>
+          <p>Try lowering the minimum match % or adjusting filters.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Set match bar widths from data-pct (avoids Django template in style attribute)
+  document.querySelectorAll('[data-pct]').forEach(function (el) {
+    el.style.width = el.dataset.pct + '%';
+  });
+
+  // Event delegation for pantry remove buttons (avoids Django template in onclick)
+  var miniTags = document.getElementById('pantry-mini-tags');
+  if (miniTags) {
+    miniTags.addEventListener('click', function (e) {
+      var btn = e.target.closest('.rm-pantry-btn');
+      if (btn) removeFromPantry(parseInt(btn.dataset.id), btn.dataset.name);
+    });
+  }
+
+  // Live pantry reload in sidebar
+  var _origLoad2 = loadPantry;
+  window.loadPantry = async function () {
+    await _origLoad2();
+    var container = document.getElementById('pantry-mini-tags');
+    if (!container) return;
+    container.innerHTML = pantryItems.map(function (i) {
+      return '<span class="pantry-mini-tag">' + i.name +
+        '<button type="button" class="rm-pantry-btn" data-id="' + i.id + '" data-name="' + i.name + '">×</button>' +
+        '</span>';
+    }).join('');
+  };
+</script>
+{% endblock %}
